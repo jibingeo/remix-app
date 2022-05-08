@@ -15,7 +15,7 @@ export async function loader({ request }) {
   if (success === false) {
     throw new Error(status_message);
   }
-  let prunedData = results.map(({ id, title, poster_path }) => {
+  let movies = results.map(({ id, title, poster_path }) => {
     return {
       id,
       title,
@@ -23,21 +23,23 @@ export async function loader({ request }) {
     };
   });
   return json({
-    movies: prunedData,
-    nextPage: page + 1,
+    movies,
+    page,
   });
 }
 
 export default function Index() {
-  const { movies, nextPage } = useLoaderData();
+  const { movies, page } = useLoaderData();
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.4" }}>
       <div className="drop-shadow-md bg-sky-900">
         <div className="max-w-6xl m-auto p-4">
-          <img
-            src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg"
-            className="h-6 cursor-pointer"
-          />
+          <Link to="/">
+            <img
+              src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg"
+              className="h-6 cursor-pointer"
+            />
+          </Link>
         </div>
       </div>
       <div className="max-w-6xl m-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
@@ -53,8 +55,15 @@ export default function Index() {
           </div>
         ))}
       </div>
-        <div className="max-w-6xl text-center m-auto p-4">
-      <Link to={`?page=${nextPage}`}>Next</Link>{" "}
+      <div className="max-w-6xl text-center m-auto p-4">
+        {page > 1 && (
+          <Link className="p-2" to={`?page=${page - 1}`}>
+            {"<<  "}
+          </Link>
+        )}
+        <Link className="p-2" to={`?page=${page + 1}`}>
+          {"  >>"}
+        </Link>
       </div>
     </div>
   );

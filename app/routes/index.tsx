@@ -32,7 +32,7 @@ export default function Index() {
           className="h-6 cursor-pointer"
         />
       </div>
-      <div className="grid grid-cols-4 gap-4 m-4">
+      <div className="max-w-6xl m-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
         {movies.map(({ id, title, poster_path }) => (
           <div
             key={id}

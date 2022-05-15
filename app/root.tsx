@@ -1,4 +1,4 @@
-import type { MetaFunction } from "@remix-run/node";
+import type { MetaFunction, LinksFunction } from "@remix-run/node";
 import {
   Links,
   LiveReload,
@@ -6,7 +6,11 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useTransition,
 } from "@remix-run/react";
+import { useEffect } from "react";
+import NProgress from "nprogress";
+import nProgressStyles from "nprogress/nprogress.css";
 
 export const meta: MetaFunction = () => ({
   charset: "utf-8",
@@ -14,7 +18,17 @@ export const meta: MetaFunction = () => ({
   viewport: "width=device-width,initial-scale=1",
 });
 
+export const links: LinksFunction = () => {
+  return [{ rel: "stylesheet", href: nProgressStyles }];
+};
+
 export default function App() {
+  const transition = useTransition();
+  useEffect(() => {
+    if (transition.state === "idle") NProgress.done();
+    else NProgress.start();
+  }, [transition.state]);
+
   return (
     <html lang="en">
       <head>

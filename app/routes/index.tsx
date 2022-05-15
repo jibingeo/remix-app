@@ -1,8 +1,26 @@
 import type { LoaderFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, Link } from "@remix-run/react";
+import { useLoaderData, useFetcher, Link } from "@remix-run/react";
+import faunadb from "faunadb";
+import { useRef, useState, useEffect } from "react";
 
-export async function loader({ request }) {
+type LoaderData = {
+  movies: any;
+  page: any;
+};
+
+export const loader: LoaderFunction = async ({ request }) => {
+  var q = faunadb.query;
+  var client = new faunadb.Client({
+    secret: `${process.env.FAUNA_ADMIN_KEY}`,
+    domain: "db.fauna.com",
+    port: 443,
+    scheme: "https",
+  });
+
+  var createP = await client.query(
+    q.Create(q.Collection("test"), { data: { testField: "testValue" } })
+  );
   const url = new URL(request.url);
   const page = Number(url.searchParams.get("page") || 1);
   let apiUrl = `https://api.themoviedb.org/3/trending/all/day?page=${page}`;
@@ -22,14 +40,33 @@ export async function loader({ request }) {
       poster_path,
     };
   });
-  return json({
+  const data: LoaderData = {
     movies,
     page,
-  });
-}
+  };
+
+  return json(data);
+};
 
 export default function Index() {
-  const { movies, page } = useLoaderData();
+  const { movies, page } = useLoaderData<LoaderData>();
+  const [items, setItems] = useState(movies);
+  const fetcher = useFetcher();
+  const startRef = useRef(page);
+
+  const handleClick: React.MouseEventHandler = (e) => {
+    const nextPage = startRef.current + 1;
+    fetcher.load(`/?index&page=${nextPage}`);
+    startRef.current = nextPage;
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    if (fetcher.data) {
+      setItems((prevItems) => [...prevItems, ...fetcher.data?.movies]);
+    }
+  }, [fetcher.data]);
+
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.4" }}>
       <div className="drop-shadow-md bg-sky-900">
@@ -43,27 +80,30 @@ export default function Index() {
         </div>
       </div>
       <div className="max-w-6xl m-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-        {movies.map(({ id, title, poster_path }) => (
+        {items.map(({ id, title, poster_path }) => (
           <div
             key={id}
             className="w-64 drop-shadow-md bg-white rounded-md overflow-hidden w-full cursor-pointer"
           >
             <img
               className="h-full w-full"
-              src={`https://image.tmdb.org/t/p/w500/${poster_path}`}
+              src={`https://image.tmdb.org/t/p/w440_and_h660_face${poster_path}`}
             />
           </div>
         ))}
       </div>
-      <div className="max-w-6xl text-center m-auto p-4">
-        {page > 1 && (
-          <Link className="p-2" to={`?page=${page - 1}`}>
-            {"<<  "}
+      <div className="max-w-6xl text-center m-auto mb-4 p-4">
+        {fetcher.state === "loading" ? (
+          "Loading..."
+        ) : (
+          <Link
+            onClick={handleClick}
+            className="p-2"
+            to={`?page=${startRef.current+1}`}
+          >
+            {"Load more"}
           </Link>
         )}
-        <Link className="p-2" to={`?page=${page + 1}`}>
-          {"  >>"}
-        </Link>
       </div>
     </div>
   );
